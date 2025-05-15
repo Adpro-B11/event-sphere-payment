@@ -59,7 +59,7 @@ jobs:
 
     - name: Connect SSH and Restart Services
       run: |
-        ssh -o StrictHostKeyChecking=no -i $HOME/key.pem ubuntu@ec2-52-0-139-15.compute-1.amazonaws.com '
+        ssh -o StrictHostKeyChecking=no -i $HOME/key.pem ubuntu@ec2-3-219-44-29.compute-1.amazonaws.com '
           sudo systemctl restart event-sphere-payment &&
           sudo systemctl restart nginx
         '
