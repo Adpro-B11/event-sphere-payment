@@ -55,7 +55,7 @@ jobs:
         username: ubuntu
         key: ${{ secrets.DEPLOY_KEY }}
         source: "target/*.jar"
-        target: "/home/ubuntu/event-sphere-payment/"
+        target: "/home/ubuntu/deployment/"
 
     - name: Connect SSH and Restart Services
       run: |
