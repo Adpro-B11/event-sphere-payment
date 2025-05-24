@@ -8,10 +8,7 @@ import java.util.Optional;
 
 public interface TransactionService {
 
-    void initStrategy(
-            boolean isAdmin,
-            String currentUserId
-    );
+    void initStrategy();
 
     Transaction createTopUpTransaction(
             String userId,
@@ -27,14 +24,7 @@ public interface TransactionService {
     );
 
     Optional<Transaction> getTransactionById(
-            String transactionId,
-            String currentUserId,
-            boolean isAdmin
-    );
-
-    List<Transaction> viewAllTransactions(
-            String currentUserId,
-            boolean isAdmin
+            String transactionId
     );
 
     List<Transaction> filterTransactions(
@@ -48,7 +38,6 @@ public interface TransactionService {
     );
 
     void deleteTransaction(
-            String transactionId,
-            boolean isAdmin
+            String transactionId
     );
 }

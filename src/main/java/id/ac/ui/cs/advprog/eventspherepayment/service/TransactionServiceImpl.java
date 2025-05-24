@@ -1,40 +1,67 @@
 package id.ac.ui.cs.advprog.eventspherepayment.service;
 
+import id.ac.ui.cs.advprog.eventspherepayment.client.AuthServiceClient;
 import id.ac.ui.cs.advprog.eventspherepayment.enums.*;
 import id.ac.ui.cs.advprog.eventspherepayment.model.Transaction;
 import id.ac.ui.cs.advprog.eventspherepayment.repository.TransactionRepository;
-import id.ac.ui.cs.advprog.eventspherepayment.service.UserService;
 import id.ac.ui.cs.advprog.eventspherepayment.strategy.*;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
-import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @Service
-@Transactional          // setiap metode = satu transaksi DB
+@Transactional
 public class TransactionServiceImpl implements TransactionService {
 
     private final TransactionRepository repository;
-    private final UserService userService;
+    private final AuthServiceClient authClient;
+    private final RestTemplate rest;
+    private final String callbackBaseUrl;
     private AccessStrategy strategy;
 
-    public TransactionServiceImpl(TransactionRepository repository,
-                                  UserService userService) {
-        this.repository   = repository;
-        this.userService  = userService;
+    private String currentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return (auth != null) ? auth.getName() : null;
     }
 
-    /* ---------- Strategy ---------- */
+    private boolean currentUserIsAdmin() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) return false;
+        return auth.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(r -> r.equals("ADMIN"));
+    }
 
     @Override
-    public void initStrategy(boolean isAdmin, String currentUserId) {
+    public void initStrategy() {
+        boolean isAdmin = currentUserIsAdmin();
+        String currentUserId = currentUserId();
         strategy = isAdmin
                 ? new AdminAccessStrategy(repository)
                 : new UserAccessStrategy(repository, currentUserId);
     }
 
-    /* ---------- CREATE ---------- */
+    public TransactionServiceImpl(TransactionRepository repository,
+                                  AuthServiceClient authClient,
+                                  RestTemplate rest,
+                                  @Value("${event.service.callback.url:http://localhost:8082}") String callbackBaseUrl) {
+        this.repository      = repository;
+        this.authClient      = authClient;
+        this.rest            = rest;
+        this.callbackBaseUrl = callbackBaseUrl.endsWith("/")
+                ? callbackBaseUrl.substring(0, callbackBaseUrl.length() - 1)
+                : callbackBaseUrl;
+    }
 
     @Override
     public Transaction createTopUpTransaction(String userId,
@@ -43,17 +70,15 @@ public class TransactionServiceImpl implements TransactionService {
                                               Map<String, String> paymentData) {
 
         String txId = UUID.randomUUID().toString();
-
         Transaction tx = repository.createAndSave(
-                TransactionType.TOPUP_BALANCE.getValue(), // persist ganda? → lihat catatan
+                TransactionType.TOPUP_BALANCE.getValue(),
                 txId, userId, amount, method, paymentData
-        );                                             // ① persist kali-1
+        );
+        tx.setStatus(TransactionStatus.PENDING.getValue());
+        repository.update(tx);
 
-        boolean success = tryAddBalance(userId, amount);
-        tx.setStatus(success ? TransactionStatus.SUCCESS.getValue()
-                : TransactionStatus.FAILED.getValue());
-
-        return repository.update(tx);                  // ② merge → simpan status
+        processTopUpAsync(tx);
+        return tx;
     }
 
     @Override
@@ -62,62 +87,79 @@ public class TransactionServiceImpl implements TransactionService {
                                                        Map<String, String> ticketData) {
 
         String txId = UUID.randomUUID().toString();
-
         Transaction tx = repository.createAndSave(
                 TransactionType.TICKET_PURCHASE.getValue(),
                 txId, userId, amount,
                 PaymentMethod.IN_APP_BALANCE.getValue(),
                 ticketData
-        );                                             // ① persist kali-1
+        );
+        tx.setStatus(TransactionStatus.PENDING.getValue());
+        repository.update(tx);
 
-        boolean success = tryDeductBalance(userId, amount);
-        tx.setStatus(success ? TransactionStatus.SUCCESS.getValue()
-                : TransactionStatus.FAILED.getValue());
-
-        return repository.update(tx);                  // ② merge → simpan status
+        processPurchaseAsync(tx);
+        return tx;
     }
 
-    /* ---------- READ / FILTER / DELETE ---------- */
-
     @Override
-    public Optional<Transaction> getTransactionById(String transactionId,
-                                                    String currentUserId,
-                                                    boolean isAdmin) {
+    @Transactional(readOnly = true)
+    public Optional<Transaction> getTransactionById(String transactionId) {
         return strategy.findById(transactionId);
     }
 
     @Override
-    public List<Transaction> viewAllTransactions(String currentUserId,
-                                                 boolean isAdmin) {
-        return strategy.viewAllTransactions();
-    }
-
-    @Override
-    public List<Transaction> filterTransactions(String currentUserId,
-                                                boolean isAdmin,
-                                                String status,
-                                                String type,
-                                                String method,
-                                                LocalDateTime createdAfter,
-                                                LocalDateTime createdBefore) {
+    @Transactional(readOnly = true)
+    public java.util.List<Transaction> filterTransactions(String currentUserId,
+                                                          boolean isAdmin,
+                                                          String status,
+                                                          String type,
+                                                          String method,
+                                                          java.time.LocalDateTime createdAfter,
+                                                          java.time.LocalDateTime createdBefore) {
         return strategy.filterTransactions(currentUserId, status, type, method,
                 createdAfter, createdBefore);
     }
 
     @Override
-    public void deleteTransaction(String transactionId, boolean isAdmin) {
+    public void deleteTransaction(String transactionId) {
         strategy.deleteTransaction(transactionId);
     }
 
-    /* ---------- helper ---------- */
+    @Async
+    public CompletableFuture<Void> processTopUpAsync(Transaction tx) {
+        boolean success = authClient.addBalance(String.valueOf(tx.getUserId()), tx.getAmount());
+        tx.setStatus(success
+                ? TransactionStatus.SUCCESS.getValue()
+                : TransactionStatus.FAILED.getValue());
+        repository.update(tx);
 
-    private boolean tryAddBalance(String userId, double amount) {
-        try { userService.addBalance(userId, amount); return true; }
-        catch (Exception ex) { return false; }
+        return CompletableFuture.completedFuture(null);
     }
 
-    private boolean tryDeductBalance(String userId, double amount) {
-        try { userService.deductBalance(userId, amount); return true; }
-        catch (Exception ex) { return false; }
+    @Async
+    public CompletableFuture<Void> processPurchaseAsync(Transaction tx) {
+        boolean success = authClient.deductBalance(String.valueOf(tx.getUserId()), tx.getAmount());
+        tx.setStatus(success
+                ? TransactionStatus.SUCCESS.getValue()
+                : TransactionStatus.FAILED.getValue());
+        repository.update(tx);
+
+        if (success) {
+            sendCallback(tx);
+        }
+        return CompletableFuture.completedFuture(null);
+    }
+
+    private void sendCallback(Transaction tx) {
+        String callbackUrl = callbackBaseUrl + "/webhook/transaction/purchase-success";
+        Map<String, Object> payload = Map.of(
+                "transactionId", tx.getTransactionId(),
+                "userId",        tx.getUserId(),
+                "data",          tx.getData()
+        );
+        try {
+            rest.postForEntity(callbackUrl, payload, Void.class);
+        } catch (Exception ignored) {
+
+        }
     }
 }
