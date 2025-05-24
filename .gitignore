@@ -26,6 +26,10 @@ out/
 !**/src/main/**/out/
 !**/src/test/**/out/
 
+### Resources ###
+src/test/resources/
+src/main/resources/
+
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/
