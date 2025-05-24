@@ -2,9 +2,12 @@ package id.ac.ui.cs.advprog.eventspherepayment.strategy;
 
 import id.ac.ui.cs.advprog.eventspherepayment.model.Transaction;
 import id.ac.ui.cs.advprog.eventspherepayment.repository.TransactionRepository;
+import org.springframework.stereotype.Component;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+
 
 public class AdminAccessStrategy implements AccessStrategy {
     private final TransactionRepository repository;
@@ -20,7 +23,7 @@ public class AdminAccessStrategy implements AccessStrategy {
 
     @Override
     public List<Transaction> viewAllTransactions() {
-        return repository.findAll();
+        return repository.findByFilters(null, null, null, null, null, null);
     }
 
     @Override
