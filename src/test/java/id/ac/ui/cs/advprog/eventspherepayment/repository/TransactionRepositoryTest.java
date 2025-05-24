@@ -46,7 +46,6 @@ class TransactionRepositoryTest {
         txId1 = UUID.fromString("ab098978-37c8-4150-8dee-04c6acf7a490");
         txId2 = UUID.fromString("ab098978-37c8-4150-8dee-04c6acf7a491");
 
-        // Persist a successful TicketPurchaseTransaction
         Map<String, String> ticketData = Map.of(
                 "VIP", "2",
                 "REGULAR", "5",
@@ -63,7 +62,7 @@ class TransactionRepositoryTest {
         t1.setStatus(TransactionStatus.SUCCESS.getValue());
         em.persist(t1);
 
-        // Persist a successful TopUpTransaction
+
         Map<String, String> payData = Map.of("accountNumber", "6631286683123456");
         TopUpTransaction t2 = new TopUpTransaction(
                 txId2,
@@ -124,12 +123,6 @@ class TransactionRepositoryTest {
         Optional<Transaction> found = repository.findById(txId1.toString());
         assertTrue(found.isPresent());
         assertEquals(txId1, found.get().getTransactionId());
-    }
-
-    @Test
-    void testFindAll_ReturnsTwo() {
-        List<Transaction> all = repository.findAll();
-        assertEquals(2, all.size());
     }
 
     @Test

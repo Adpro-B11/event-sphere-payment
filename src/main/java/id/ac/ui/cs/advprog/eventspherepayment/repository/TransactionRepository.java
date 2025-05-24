@@ -62,12 +62,6 @@ public class TransactionRepository {
         }
     }
 
-    public List<Transaction> findAll() {
-        return entityManager.createQuery(
-                "SELECT t FROM Transaction t ORDER BY t.createdAt DESC", Transaction.class
-        ).getResultList();
-    }
-
     public List<Transaction> findByFilters(
             String userId,
             String status,
