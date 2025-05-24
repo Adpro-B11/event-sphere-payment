@@ -75,4 +75,9 @@ public class TopUpTransaction extends Transaction {
             }
         }
     }
+
+    @Override
+    public Map<String, String> getData() {
+        return paymentData;
+    }
 }

@@ -1,7 +1,7 @@
-package id.ac.ui.cs.advprog.eventsphere.payment_balance.strategy;
+package id.ac.ui.cs.advprog.eventspherepayment.strategy;
 
-import id.ac.ui.cs.advprog.eventsphere.payment_balance.model.Transaction;
-import id.ac.ui.cs.advprog.eventsphere.payment_balance.repository.TransactionRepository;
+import id.ac.ui.cs.advprog.eventspherepayment.model.Transaction;
+import id.ac.ui.cs.advprog.eventspherepayment.repository.TransactionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

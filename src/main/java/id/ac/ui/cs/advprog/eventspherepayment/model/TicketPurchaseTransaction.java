@@ -84,4 +84,9 @@ public class TicketPurchaseTransaction extends Transaction {
         }
         return quantity;
     }
+
+    @Override
+    public Map<String, String> getData() {
+        return ticketData;
+    }
 }

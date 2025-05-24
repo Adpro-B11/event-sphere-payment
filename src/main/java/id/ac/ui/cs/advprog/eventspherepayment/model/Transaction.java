@@ -69,5 +69,7 @@ public abstract class Transaction {
         this.updatedAt = LocalDateTime.now();
     }
 
+    public abstract Map<String, String> getData();
+
     public abstract void validateTransaction(String method, Map<String, String> paymentData);
 }
