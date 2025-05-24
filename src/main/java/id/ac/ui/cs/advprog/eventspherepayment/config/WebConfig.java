@@ -1,28 +1,30 @@
 package id.ac.ui.cs.advprog.eventspherepayment.config;
 
-import id.ac.ui.cs.advprog.eventspherepayment.auth.resolver.CurrentUserResolver;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.method.support.HandlerMethodArgumentResolver;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-
-import java.util.List;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
+import java.util.Collections;
 
 @Configuration
-@RequiredArgsConstructor
-public class WebConfig implements WebMvcConfigurer {
-
-    private final CurrentUserResolver currentUserResolver;
-
-    @Override
-    public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
-        resolvers.add(currentUserResolver);
-    }
+public class WebConfig {
 
     @Bean
     public RestTemplate restTemplate() {
-        return new RestTemplate();
+        RestTemplate rest = new RestTemplate();
+
+        ClientHttpRequestInterceptor jwtPropagation = (req, body, exec) -> {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.getCredentials() != null) {
+                String token = auth.getCredentials().toString();
+                req.getHeaders().setBearerAuth(token);
+            }
+            return exec.execute(req, body);
+        };
+
+        rest.setInterceptors(Collections.singletonList(jwtPropagation));
+        return rest;
     }
 }
