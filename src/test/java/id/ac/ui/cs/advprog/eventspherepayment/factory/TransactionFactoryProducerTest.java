@@ -35,6 +35,7 @@ class TransactionFactoryProducerTest {
                 TransactionType.TOPUP_BALANCE.getValue(),
                 transactionId,
                 userId,
+                null,
                 50000,
                 PaymentMethod.BANK_TRANSFER.getValue(),
                 paymentData
@@ -51,6 +52,7 @@ class TransactionFactoryProducerTest {
                 TransactionType.TICKET_PURCHASE.getValue(),
                 transactionId,
                 userId,
+                UUID.randomUUID().toString(),
                 100000,
                 PaymentMethod.IN_APP_BALANCE.getValue(),
                 ticketData
@@ -66,6 +68,7 @@ class TransactionFactoryProducerTest {
                         "INVALID_TYPE",
                         transactionId,
                         userId,
+                        null,
                         50000,
                         PaymentMethod.BANK_TRANSFER.getValue(),
                         paymentData

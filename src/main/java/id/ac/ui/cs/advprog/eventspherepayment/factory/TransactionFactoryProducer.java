@@ -12,6 +12,7 @@ public class TransactionFactoryProducer {
     public static TransactionFactory getFactory(String type,
                                                 UUID transactionId,
                                                 UUID userId,
+                                                UUID eventId,
                                                 double amount,
                                                 String method,
                                                 Map<String, String> data) {
@@ -21,22 +22,27 @@ public class TransactionFactoryProducer {
             );
         } else if (TransactionType.TICKET_PURCHASE.getValue().equals(type)) {
             return new TicketPurchaseTransactionFactory(
-                    transactionId, userId, amount, method, data
+                    transactionId, userId, eventId, amount, method, data
             );
         }
         throw new IllegalArgumentException("Unknown transaction type: " + type);
     }
 
-    // Overloaded method for convenience when working with String IDs
     public static TransactionFactory getFactory(String type,
                                                 String transactionId,
                                                 String userId,
+                                                String eventId,
                                                 double amount,
                                                 String method,
                                                 Map<String, String> data) {
         UUID transactionUuid = UUID.fromString(transactionId);
         UUID userUuid = UUID.fromString(userId);
+        UUID eventUuid = null;
+        if (eventId != null) {
+            eventUuid = UUID.fromString(eventId);
+        }
 
-        return getFactory(type, transactionUuid, userUuid, amount, method, data);
+
+        return getFactory(type, transactionUuid, userUuid,eventUuid, amount, method, data);
     }
 }
