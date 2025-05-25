@@ -1,5 +1,7 @@
 package id.ac.ui.cs.advprog.eventspherepayment.controller;
 
+import id.ac.ui.cs.advprog.eventspherepayment.dto.FilterTransactionsResponse;
+import id.ac.ui.cs.advprog.eventspherepayment.dto.GetByIdResponse;
 import id.ac.ui.cs.advprog.eventspherepayment.dto.PurchaseRequest;
 import id.ac.ui.cs.advprog.eventspherepayment.dto.TopUpRequest;
 import id.ac.ui.cs.advprog.eventspherepayment.model.Transaction;
@@ -9,7 +11,9 @@ import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api/transactions")
@@ -25,6 +29,7 @@ public class TransactionController {
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Transaction> topUpBalance(@RequestBody TopUpRequest request) {
+        service.initStrategy();
         Transaction tx = service.createTopUpTransaction(
                 request.getUserId(),
                 request.getAmount(),
@@ -34,30 +39,51 @@ public class TransactionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(tx);
     }
 
-    @PostMapping(value = "/purchase",
+    @PostMapping(
+            value = "/purchase",
             consumes = MediaType.APPLICATION_JSON_VALUE,
-            produces = MediaType.APPLICATION_JSON_VALUE)
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
     public ResponseEntity<Transaction> purchaseTicket(@RequestBody PurchaseRequest request) {
-        Transaction tx = service.createTicketPurchaseTransaction(
-                request.getUserId(),
-                request.getAmount(),
-                request.getTicketData()
+
+        if (request.getAmount() < 0 || request.getQuantity() < 0) {
+            return ResponseEntity
+                    .badRequest()
+                    .build();
+        }
+
+        String currentUserId = service.initStrategy();
+        Map<String, String> ticketData = new HashMap<>();
+        ticketData.put(
+                request.getTicketId(),
+                String.valueOf(request.getQuantity())
         );
-        return ResponseEntity.status(HttpStatus.CREATED).body(tx);
+
+        Transaction tx = service.createTicketPurchaseTransaction(
+                currentUserId,
+                request.getEventId(),
+                request.getAmount(),
+                ticketData
+        );
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(tx);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Transaction> getById(
-            @PathVariable String id
-    ) {
+    public CompletableFuture<ResponseEntity<GetByIdResponse>> getById(
+            @PathVariable String id) {
         service.initStrategy();
+
         return service.getTransactionById(id)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+                .thenApply(opt -> opt
+                        .map(tx -> ResponseEntity.ok(new GetByIdResponse(tx)))
+                        .orElseGet(() -> ResponseEntity.notFound().build())
+                );
     }
 
     @GetMapping
-    public ResponseEntity<List<Transaction>> list(
+    public CompletableFuture<ResponseEntity<FilterTransactionsResponse>> filteringTransaction(
             @RequestParam String currentUserId,
             @RequestParam(defaultValue = "false") boolean isAdmin,
             @RequestParam(required = false) String status,
@@ -66,23 +92,18 @@ public class TransactionController {
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdAfter,
             @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdBefore
-    ) {
-        service.initStrategy();
-        List<Transaction> list = service.filterTransactions(
-                currentUserId, isAdmin, status, type, method, createdAfter, createdBefore);
-        return ResponseEntity.ok(list);
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdBefore) {
+
+        return service.filterTransactions(
+                        currentUserId, isAdmin, status, type, method,
+                        createdAfter, createdBefore)
+                .thenApply(list -> ResponseEntity.ok(new FilterTransactionsResponse(list)));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(
-            @PathVariable String id,
-            @RequestParam String currentUserId,
-            @RequestParam(defaultValue = "false") boolean isAdmin
-    ) {
-        service.initStrategy();
-        service.deleteTransaction(id);
-        return ResponseEntity.noContent().build();
+    public CompletableFuture<ResponseEntity<Void>> delete(
+            @PathVariable String id){
+        return service.deleteTransaction(id).thenApply(v -> ResponseEntity.ok().build());
     }
 
 }
