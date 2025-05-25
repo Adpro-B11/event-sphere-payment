@@ -38,6 +38,7 @@ class TransactionRepositoryTest {
     private UUID txId2;
     private UUID userId1;
     private UUID userId2;
+    private UUID eventId1;
 
     @BeforeEach
     void setUp() {
@@ -45,6 +46,7 @@ class TransactionRepositoryTest {
         userId2 = UUID.randomUUID();
         txId1 = UUID.fromString("ab098978-37c8-4150-8dee-04c6acf7a490");
         txId2 = UUID.fromString("ab098978-37c8-4150-8dee-04c6acf7a491");
+        eventId1=UUID.fromString("bb098978-37c8-4150-8dee-04c6acf7a491");
 
         Map<String, String> ticketData = Map.of(
                 "VIP", "2",
@@ -54,6 +56,7 @@ class TransactionRepositoryTest {
         TicketPurchaseTransaction t1 = new TicketPurchaseTransaction(
                 txId1,
                 userId1,
+                eventId1,
                 TransactionType.TICKET_PURCHASE.getValue(),
                 100000.0,
                 PaymentMethod.IN_APP_BALANCE.getValue(),
@@ -87,6 +90,7 @@ class TransactionRepositoryTest {
                 TransactionType.TICKET_PURCHASE.getValue(),
                 newTx,
                 userId1.toString(),
+                eventId1.toString(),
                 150000.0,
                 PaymentMethod.IN_APP_BALANCE.getValue(),
                 data
@@ -107,6 +111,7 @@ class TransactionRepositoryTest {
                 TransactionType.TOPUP_BALANCE.getValue(),
                 newTx,
                 userId2.toString(),
+                null,
                 75000.0,
                 PaymentMethod.BANK_TRANSFER.getValue(),
                 data
@@ -169,7 +174,7 @@ class TransactionRepositoryTest {
     @Test
     void testCreateInvalidType_Throws() {
         assertThrows(IllegalArgumentException.class, () -> repository.createAndSave(
-                "INVALID", "dummy", userId1.toString(), 0.0, "X", Collections.emptyMap()
+                "INVALID", "dummy", userId1.toString(),null, 0.0, "X", Collections.emptyMap()
         ));
     }
 
@@ -179,9 +184,16 @@ class TransactionRepositoryTest {
     }
 
     @Test
-    void testSaveTransactionWithNullId_Throws() {
+    void testSaveTransactionWithNullTransactionId_Throws() {
         assertThrows(IllegalArgumentException.class, () -> new TicketPurchaseTransaction(
-                null, userId1, TransactionType.TICKET_PURCHASE.getValue(), 0.0, PaymentMethod.IN_APP_BALANCE.getValue(), Collections.emptyMap()
+                null, userId1,eventId1, TransactionType.TICKET_PURCHASE.getValue(), 0.0, PaymentMethod.IN_APP_BALANCE.getValue(), Collections.emptyMap()
+        ));
+    }
+
+    @Test
+    void testSaveTransactionWithNullEventId_Throws() {
+        assertThrows(IllegalArgumentException.class, () -> new TicketPurchaseTransaction(
+                txId1, userId1,null, TransactionType.TICKET_PURCHASE.getValue(), 0.0, PaymentMethod.IN_APP_BALANCE.getValue(), Collections.emptyMap()
         ));
     }
 
@@ -232,7 +244,7 @@ class TransactionRepositoryTest {
     @Test
     void testCreateAndSaveWithInvalidData_Throws() {
         assertThrows(IllegalArgumentException.class, () -> repository.createAndSave(
-                TransactionType.TOPUP_BALANCE.getValue(), UUID.randomUUID().toString(), userId2.toString(), 100, PaymentMethod.BANK_TRANSFER.getValue(), Map.of("accountNumber","123")
+                TransactionType.TOPUP_BALANCE.getValue(), UUID.randomUUID().toString(), userId2.toString(),eventId1.toString(), 100, PaymentMethod.BANK_TRANSFER.getValue(), Map.of("accountNumber","123")
         ));
     }
 
@@ -240,7 +252,7 @@ class TransactionRepositoryTest {
     void testTicketPurchaseWithMultipleTicketTypes_Succeeds() {
         Map<String, String> multi = Map.of("VIP", "2", "REGULAR", "10", "ECONOMY", "5", "BACKSTAGE", "1");
         Transaction tx = repository.createAndSave(
-                TransactionType.TICKET_PURCHASE.getValue(), UUID.randomUUID().toString(), userId1.toString(), 200000, PaymentMethod.IN_APP_BALANCE.getValue(), multi
+                TransactionType.TICKET_PURCHASE.getValue(), UUID.randomUUID().toString(), userId1.toString(),eventId1.toString(), 200000, PaymentMethod.IN_APP_BALANCE.getValue(), multi
         );
         assertInstanceOf(TicketPurchaseTransaction.class, tx);
         TicketPurchaseTransaction tpt = (TicketPurchaseTransaction) tx;
@@ -251,7 +263,7 @@ class TransactionRepositoryTest {
     @Test
     void testTicketPurchaseWithEmptyTicketData_Throws() {
         assertThrows(IllegalArgumentException.class, () -> repository.createAndSave(
-                TransactionType.TICKET_PURCHASE.getValue(), UUID.randomUUID().toString(), userId1.toString(), 0, PaymentMethod.IN_APP_BALANCE.getValue(), Collections.emptyMap()
+                TransactionType.TICKET_PURCHASE.getValue(), UUID.randomUUID().toString(), userId1.toString(),eventId1.toString(), 0, PaymentMethod.IN_APP_BALANCE.getValue(), Collections.emptyMap()
         ));
     }
 
@@ -260,7 +272,7 @@ class TransactionRepositoryTest {
         Map<String, String> small = Map.of("VIP", "2", "REGULAR", "3");
         String newId = UUID.randomUUID().toString();
         Transaction tx = repository.createAndSave(
-                TransactionType.TICKET_PURCHASE.getValue(), newId, userId1.toString(), 150000, PaymentMethod.IN_APP_BALANCE.getValue(), small
+                TransactionType.TICKET_PURCHASE.getValue(), newId, userId1.toString(),eventId1.toString(), 150000, PaymentMethod.IN_APP_BALANCE.getValue(), small
         );
         Optional<Transaction> found = repository.findById(newId);
         assertTrue(found.isPresent());

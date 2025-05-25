@@ -25,15 +25,20 @@ public class TransactionRepository {
     public Transaction createAndSave(String type,
                                      String transactionId,
                                      String userId,
+                                     String eventId,
                                      double amount,
                                      String method,
                                      Map<String, String> data) {
 
         UUID txUuid   = UUID.fromString(transactionId);
         UUID userUuid = UUID.fromString(userId);
+        UUID eventUuid = null;
+        if (eventId != null) {
+            eventUuid = UUID.fromString(eventId);
+        }
 
         Transaction tx = TransactionFactoryProducer
-                .getFactory(type, txUuid, userUuid, amount, method, data)
+                .getFactory(type, txUuid, userUuid, eventUuid, amount, method, data)
                 .createTransaction();
 
         return save(tx);
@@ -80,7 +85,7 @@ public class TransactionRepository {
             try {
                 predicates.add(cb.equal(root.get("userId"), UUID.fromString(userId)));
             } catch (IllegalArgumentException ex) {
-                return Collections.emptyList(); // UUID tak valid
+                return Collections.emptyList();
             }
         }
         if (status != null)
@@ -95,7 +100,6 @@ public class TransactionRepository {
         cq.where(predicates.toArray(new Predicate[0]));
         cq.orderBy(cb.desc(root.get("createdAt")));
 
-        // hasil awal
         List<Transaction> result = entityManager.createQuery(cq).getResultList();
 
         if (method != null) {

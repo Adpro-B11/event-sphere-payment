@@ -27,8 +27,6 @@ class TransactionTopUpTest {
         transactionId = UUID.randomUUID().toString();
     }
 
-    // ---------- Bank Transfer Scenarios ----------
-
     @Test
     void testCreateTopUpTransactionPending_BankTransfer() {
         paymentData.put("bankName", "Bank ABC");
@@ -38,6 +36,7 @@ class TransactionTopUpTest {
                 TransactionType.TOPUP_BALANCE.getValue(),
                 transactionId,
                 userId,
+                null,
                 AMOUNT,
                 PaymentMethod.BANK_TRANSFER.getValue(),
                 paymentData
@@ -62,6 +61,7 @@ class TransactionTopUpTest {
                         TransactionType.TOPUP_BALANCE.getValue(),
                         transactionId,
                         userId,
+                        null,
                         AMOUNT,
                         PaymentMethod.BANK_TRANSFER.getValue(),
                         paymentData
@@ -79,6 +79,7 @@ class TransactionTopUpTest {
                         TransactionType.TOPUP_BALANCE.getValue(),
                         transactionId,
                         userId,
+                        null,
                         AMOUNT,
                         PaymentMethod.BANK_TRANSFER.getValue(),
                         paymentData
@@ -96,6 +97,7 @@ class TransactionTopUpTest {
                         TransactionType.TOPUP_BALANCE.getValue(),
                         transactionId,
                         userId,
+                        null,
                         AMOUNT,
                         PaymentMethod.BANK_TRANSFER.getValue(),
                         paymentData
@@ -113,6 +115,7 @@ class TransactionTopUpTest {
                         TransactionType.TOPUP_BALANCE.getValue(),
                         transactionId,
                         userId,
+                        null,
                         AMOUNT,
                         PaymentMethod.BANK_TRANSFER.getValue(),
                         paymentData
@@ -130,6 +133,7 @@ class TransactionTopUpTest {
                         TransactionType.TOPUP_BALANCE.getValue(),
                         transactionId,
                         userId,
+                        null,
                         AMOUNT,
                         PaymentMethod.BANK_TRANSFER.getValue(),
                         paymentData
@@ -147,6 +151,7 @@ class TransactionTopUpTest {
                         TransactionType.TOPUP_BALANCE.getValue(),
                         transactionId,
                         userId,
+                        null,
                         AMOUNT,
                         PaymentMethod.BANK_TRANSFER.getValue(),
                         paymentData
@@ -164,6 +169,7 @@ class TransactionTopUpTest {
                         TransactionType.TOPUP_BALANCE.getValue(),
                         transactionId,
                         userId,
+                        null,
                         AMOUNT,
                         PaymentMethod.BANK_TRANSFER.getValue(),
                         paymentData
@@ -181,6 +187,7 @@ class TransactionTopUpTest {
                         TransactionType.TOPUP_BALANCE.getValue(),
                         transactionId,
                         userId,
+                        null,
                         AMOUNT,
                         PaymentMethod.BANK_TRANSFER.getValue(),
                         paymentData
@@ -198,6 +205,7 @@ class TransactionTopUpTest {
                         TransactionType.TOPUP_BALANCE.getValue(),
                         transactionId,
                         userId,
+                        null,
                         AMOUNT,
                         PaymentMethod.BANK_TRANSFER.getValue(),
                         paymentData
@@ -215,6 +223,7 @@ class TransactionTopUpTest {
                         TransactionType.TOPUP_BALANCE.getValue(),
                         transactionId,
                         userId,
+                        null,
                         AMOUNT,
                         PaymentMethod.BANK_TRANSFER.getValue(),
                         paymentData
@@ -222,7 +231,6 @@ class TransactionTopUpTest {
         );
     }
 
-    // ---------- Credit Card Scenarios ----------
 
     @Test
     void testCreateTopUpTransactionPending_CreditCard() {
@@ -232,6 +240,7 @@ class TransactionTopUpTest {
                 TransactionType.TOPUP_BALANCE.getValue(),
                 transactionId,
                 userId,
+                null,
                 AMOUNT,
                 PaymentMethod.CREDIT_CARD.getValue(),
                 paymentData
@@ -255,6 +264,7 @@ class TransactionTopUpTest {
                         TransactionType.TOPUP_BALANCE.getValue(),
                         transactionId,
                         userId,
+                        null,
                         AMOUNT,
                         PaymentMethod.CREDIT_CARD.getValue(),
                         paymentData
@@ -271,6 +281,7 @@ class TransactionTopUpTest {
                         TransactionType.TOPUP_BALANCE.getValue(),
                         transactionId,
                         userId,
+                        null,
                         AMOUNT,
                         PaymentMethod.CREDIT_CARD.getValue(),
                         paymentData
@@ -287,6 +298,7 @@ class TransactionTopUpTest {
                         TransactionType.TOPUP_BALANCE.getValue(),
                         transactionId,
                         userId,
+                        null,
                         AMOUNT,
                         PaymentMethod.CREDIT_CARD.getValue(),
                         paymentData
@@ -303,6 +315,7 @@ class TransactionTopUpTest {
                         TransactionType.TOPUP_BALANCE.getValue(),
                         transactionId,
                         userId,
+                        null,
                         AMOUNT,
                         PaymentMethod.CREDIT_CARD.getValue(),
                         paymentData
@@ -319,6 +332,7 @@ class TransactionTopUpTest {
                         TransactionType.TOPUP_BALANCE.getValue(),
                         transactionId,
                         userId,
+                        null,
                         AMOUNT,
                         PaymentMethod.CREDIT_CARD.getValue(),
                         paymentData
@@ -335,6 +349,7 @@ class TransactionTopUpTest {
                         TransactionType.TOPUP_BALANCE.getValue(),
                         transactionId,
                         userId,
+                        null,
                         AMOUNT,
                         PaymentMethod.CREDIT_CARD.getValue(),
                         paymentData
@@ -351,6 +366,7 @@ class TransactionTopUpTest {
                         TransactionType.TOPUP_BALANCE.getValue(),
                         transactionId,
                         userId,
+                        null,
                         AMOUNT,
                         PaymentMethod.CREDIT_CARD.getValue(),
                         paymentData
