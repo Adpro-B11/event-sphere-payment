@@ -34,6 +34,7 @@ class TransactionServiceImplTest {
     private TransactionServiceImpl service;
 
     private String userId;
+    private String eventId;
     private String adminId;
     private double amount;
     private String method;
@@ -49,6 +50,7 @@ class TransactionServiceImplTest {
         service = new TransactionServiceImpl(repository, authClient, restTemplate, dummy);
 
         userId  = UUID.randomUUID().toString();
+        eventId  = UUID.randomUUID().toString();
         adminId = UUID.randomUUID().toString();
         amount  = 1000.0;
         method  = "BANK_TRANSFER";
@@ -74,13 +76,14 @@ class TransactionServiceImplTest {
                 eq(TransactionType.TICKET_PURCHASE.getValue()),
                 anyString(),
                 eq(userId),
+                eq(eventId),
                 eq(amount),
                 anyString(),
                 eq(ticketData)
         )).thenReturn(tx);
         when(repository.update(tx)).thenReturn(tx);
 
-        Transaction result = service.createTicketPurchaseTransaction(userId, amount, data);
+        Transaction result = service.createTicketPurchaseTransaction(userId,eventId, amount, data);
 
         assertSame(tx, result);
 
@@ -89,6 +92,7 @@ class TransactionServiceImplTest {
                 eq(TransactionType.TICKET_PURCHASE.getValue()),
                 anyString(),
                 eq(userId),
+                eq(eventId),
                 eq(amount),
                 anyString(),
                 eq(ticketData)
@@ -143,7 +147,6 @@ class TransactionServiceImplTest {
 
     @Test
     void deleteTransaction_AsAdmin_ShouldCallRepositoryDelete() {
-        // set admin authentication
         UsernamePasswordAuthenticationToken adminAuth =
                 new UsernamePasswordAuthenticationToken(
                         adminId,

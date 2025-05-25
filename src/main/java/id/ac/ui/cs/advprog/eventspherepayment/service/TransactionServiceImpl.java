@@ -31,12 +31,12 @@ public class TransactionServiceImpl implements TransactionService {
     private final String callbackBaseUrl;
     private AccessStrategy strategy;
 
-    private String currentUserId() {
+    public String currentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return (auth != null) ? auth.getName() : null;
     }
 
-    private boolean currentUserIsAdmin() {
+    public boolean currentUserIsAdmin() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null) return false;
         return auth.getAuthorities().stream()
@@ -45,18 +45,19 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public void initStrategy() {
+    public String initStrategy() {
         boolean isAdmin = currentUserIsAdmin();
         String currentUserId = currentUserId();
         strategy = isAdmin
                 ? new AdminAccessStrategy(repository)
                 : new UserAccessStrategy(repository, currentUserId);
+        return currentUserId;
     }
 
     public TransactionServiceImpl(TransactionRepository repository,
                                   AuthServiceClient authClient,
                                   RestTemplate rest,
-                                  @Value("${event.service.callback.url:http://localhost:8082}") String callbackBaseUrl) {
+                                  @Value("${event.service.callback.url}") String callbackBaseUrl) {
         this.repository      = repository;
         this.authClient      = authClient;
         this.rest            = rest;
@@ -75,7 +76,7 @@ public class TransactionServiceImpl implements TransactionService {
         String txId = UUID.randomUUID().toString();
         Transaction tx = repository.createAndSave(
                 TransactionType.TOPUP_BALANCE.getValue(),
-                txId, userId, amount, method, paymentData
+                txId, userId,null, amount, method, paymentData
         );
         tx.setStatus(TransactionStatus.PENDING.getValue());
         repository.update(tx);
@@ -86,13 +87,14 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public Transaction createTicketPurchaseTransaction(String userId,
+                                                       String eventId,
                                                        double amount,
                                                        Map<String, String> ticketData) {
 
         String txId = UUID.randomUUID().toString();
         Transaction tx = repository.createAndSave(
                 TransactionType.TICKET_PURCHASE.getValue(),
-                txId, userId, amount,
+                txId, userId, eventId, amount,
                 PaymentMethod.IN_APP_BALANCE.getValue(),
                 ticketData
         );
@@ -162,7 +164,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     private void sendCallback(Transaction tx) {
-        String callbackUrl = callbackBaseUrl + "/webhook/transaction/purchase-success";
+        String callbackUrl = callbackBaseUrl + "api/ticket/webhook/purchase-success";
         Map<String, Object> payload = Map.of(
                 "transactionId", tx.getTransactionId(),
                 "userId",        tx.getUserId(),

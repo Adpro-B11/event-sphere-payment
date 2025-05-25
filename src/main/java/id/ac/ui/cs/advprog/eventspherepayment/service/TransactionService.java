@@ -9,7 +9,7 @@ import java.util.concurrent.CompletableFuture;
 
 public interface TransactionService {
 
-    void initStrategy();
+    String initStrategy();
 
     Transaction createTopUpTransaction(
             String userId,
@@ -20,6 +20,7 @@ public interface TransactionService {
 
     Transaction createTicketPurchaseTransaction(
             String userId,
+            String eventId,
             double amount,
             Map<String, String> ticketData
     );
