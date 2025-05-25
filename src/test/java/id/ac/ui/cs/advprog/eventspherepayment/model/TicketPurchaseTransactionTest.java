@@ -17,11 +17,13 @@ class TicketPurchaseTransactionTest {
 
     private Map<String, String> ticketData;
     private UUID userId;
+    private UUID eventId;
 
     @BeforeEach
     void setUp() {
         ticketData = new HashMap<>();
         userId = UUID.randomUUID();
+        eventId = UUID.randomUUID();
     }
 
     @Test
@@ -32,6 +34,7 @@ class TicketPurchaseTransactionTest {
                         TransactionType.TICKET_PURCHASE.getValue(),
                         txId.toString(),
                         userId.toString(),
+                        eventId.toString(),
                         100_000,
                         PaymentMethod.IN_APP_BALANCE.getValue(),
                         ticketData
@@ -48,6 +51,7 @@ class TicketPurchaseTransactionTest {
                         TransactionType.TICKET_PURCHASE.getValue(),
                         txId.toString(),
                         userId.toString(),
+                        eventId.toString(),
                         100_000,
                         PaymentMethod.IN_APP_BALANCE.getValue(),
                         ticketData
@@ -64,6 +68,7 @@ class TicketPurchaseTransactionTest {
                         TransactionType.TICKET_PURCHASE.getValue(),
                         txId.toString(),
                         userId.toString(),
+                        eventId.toString(),
                         100_000,
                         PaymentMethod.IN_APP_BALANCE.getValue(),
                         ticketData
@@ -80,6 +85,7 @@ class TicketPurchaseTransactionTest {
                         TransactionType.TICKET_PURCHASE.getValue(),
                         txId.toString(),
                         userId.toString(),
+                        eventId.toString(),
                         100_000,
                         PaymentMethod.IN_APP_BALANCE.getValue(),
                         ticketData
@@ -96,6 +102,7 @@ class TicketPurchaseTransactionTest {
                         TransactionType.TICKET_PURCHASE.getValue(),
                         txId.toString(),
                         userId.toString(),
+                        eventId.toString(),
                         100_000,
                         PaymentMethod.IN_APP_BALANCE.getValue(),
                         ticketData
@@ -112,6 +119,7 @@ class TicketPurchaseTransactionTest {
                         TransactionType.TICKET_PURCHASE.getValue(),
                         txId.toString(),
                         userId.toString(),
+                        eventId.toString(),
                         100_000,
                         PaymentMethod.IN_APP_BALANCE.getValue(),
                         ticketData
@@ -129,6 +137,7 @@ class TicketPurchaseTransactionTest {
                 TransactionType.TICKET_PURCHASE.getValue(),
                 txId.toString(),
                 userId.toString(),
+                eventId.toString(),
                 100_000,
                 PaymentMethod.IN_APP_BALANCE.getValue(),
                 ticketData
@@ -157,6 +166,7 @@ class TicketPurchaseTransactionTest {
                 TransactionType.TICKET_PURCHASE.getValue(),
                 txId.toString(),
                 userId.toString(),
+                eventId.toString(),
                 250_000,
                 PaymentMethod.IN_APP_BALANCE.getValue(),
                 ticketData

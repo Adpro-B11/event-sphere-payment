@@ -18,6 +18,9 @@ import java.util.UUID;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class TicketPurchaseTransaction extends Transaction {
 
+    @Column(name = "event_id", columnDefinition = "BINARY(16)")
+    private UUID eventId;
+
     @Column(name = "payment_method")
     private String method;
 
@@ -32,6 +35,7 @@ public class TicketPurchaseTransaction extends Transaction {
 
     public TicketPurchaseTransaction(UUID transactionId,
                                      UUID userId,
+                                     UUID eventId,
                                      String type,
                                      double amount,
                                      String method,
@@ -48,6 +52,7 @@ public class TicketPurchaseTransaction extends Transaction {
 
         validateTransaction(method, ticketData);
 
+        this.eventId = eventId;
         this.method = method;
         this.ticketData = ticketData;
         setStatus(TransactionStatus.PENDING.name());
@@ -76,13 +81,11 @@ public class TicketPurchaseTransaction extends Transaction {
             throw new IllegalArgumentException("Ticket type must not be null or empty.");
         }
 
-        int quantity;
         try {
-            quantity = Integer.parseInt(amountStr);
+            return Integer.parseInt(amountStr);
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Ticket amount must be a valid integer.");
         }
-        return quantity;
     }
 
     @Override
