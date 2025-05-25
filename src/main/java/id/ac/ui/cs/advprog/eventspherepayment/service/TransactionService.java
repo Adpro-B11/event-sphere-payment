@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 public interface TransactionService {
 
@@ -23,11 +24,11 @@ public interface TransactionService {
             Map<String, String> ticketData
     );
 
-    Optional<Transaction> getTransactionById(
+    CompletableFuture<Optional<Transaction>> getTransactionById(
             String transactionId
     );
 
-    List<Transaction> filterTransactions(
+    CompletableFuture<List<Transaction>> filterTransactions(
             String currentUserId,
             boolean isAdmin,
             String status,
@@ -37,7 +38,7 @@ public interface TransactionService {
             LocalDateTime createdBefore
     );
 
-    void deleteTransaction(
+    CompletableFuture<Void>  deleteTransaction(
             String transactionId
     );
 }

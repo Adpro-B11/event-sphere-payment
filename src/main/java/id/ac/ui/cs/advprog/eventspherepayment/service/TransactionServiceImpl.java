@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -61,6 +63,7 @@ public class TransactionServiceImpl implements TransactionService {
         this.callbackBaseUrl = callbackBaseUrl.endsWith("/")
                 ? callbackBaseUrl.substring(0, callbackBaseUrl.length() - 1)
                 : callbackBaseUrl;
+        initStrategy();
     }
 
     @Override
@@ -101,27 +104,36 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public Optional<Transaction> getTransactionById(String transactionId) {
-        return strategy.findById(transactionId);
+    @Async
+    public CompletableFuture<Optional<Transaction>>
+    getTransactionById(String transactionId) {
+
+        Optional<Transaction> result = strategy.findById(transactionId);
+        return CompletableFuture.completedFuture(result);
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public java.util.List<Transaction> filterTransactions(String currentUserId,
-                                                          boolean isAdmin,
-                                                          String status,
-                                                          String type,
-                                                          String method,
-                                                          java.time.LocalDateTime createdAfter,
-                                                          java.time.LocalDateTime createdBefore) {
-        return strategy.filterTransactions(currentUserId, status, type, method,
-                createdAfter, createdBefore);
+    @Async
+    public CompletableFuture<List<Transaction>>
+    filterTransactions(String currentUserId,
+                       boolean isAdmin,
+                       String status,
+                       String type,
+                       String method,
+                       LocalDateTime createdAfter,
+                       LocalDateTime createdBefore) {
+
+        List<Transaction> list = strategy.filterTransactions(
+                currentUserId, status, type, method, createdAfter, createdBefore);
+
+        return CompletableFuture.completedFuture(list);
     }
 
     @Override
-    public void deleteTransaction(String transactionId) {
+    @Async
+    public CompletableFuture<Void> deleteTransaction(String transactionId) {
         strategy.deleteTransaction(transactionId);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Async
