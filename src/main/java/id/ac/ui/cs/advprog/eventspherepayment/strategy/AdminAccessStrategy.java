@@ -22,11 +22,6 @@ public class AdminAccessStrategy implements AccessStrategy {
     }
 
     @Override
-    public List<Transaction> viewAllTransactions() {
-        return repository.findByFilters(null, null, null, null, null, null);
-    }
-
-    @Override
     public List<Transaction> viewUserTransactions(String userId) {
         throw new UnsupportedOperationException("User cannot view own transactions.");
     }

@@ -50,7 +50,7 @@ class AdminAccessStrategyTest {
         List<Transaction> txList = Arrays.asList(mock(Transaction.class), mock(Transaction.class));
         when(repository.findByFilters(null, null, null, null, null, null)).thenReturn(txList);
 
-        List<Transaction> result = strategy.viewAllTransactions();
+        List<Transaction> result = strategy.filterTransactions(null, null, null, null, null, null);
 
         assertEquals(txList, result);
         verify(repository).findByFilters(null, null, null, null, null, null);

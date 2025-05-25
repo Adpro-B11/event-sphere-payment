@@ -24,11 +24,6 @@ public class UserAccessStrategy implements AccessStrategy {
     }
 
     @Override
-    public List<Transaction> viewAllTransactions() {
-        throw new UnsupportedOperationException("User cannot view all transactions.");
-    }
-
-    @Override
     public List<Transaction> viewUserTransactions(String userId) {
         return repository.findByFilters(currentUserId, null, null, null, null, null);
     }

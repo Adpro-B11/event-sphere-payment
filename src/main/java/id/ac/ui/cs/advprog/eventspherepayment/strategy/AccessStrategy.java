@@ -10,7 +10,6 @@ import java.util.Optional;
 
 public interface AccessStrategy {
     Optional<Transaction> findById(String transactionId);
-    List<Transaction> viewAllTransactions();
     List<Transaction> viewUserTransactions(String userId);
     List<Transaction> filterTransactions(
             String userId,

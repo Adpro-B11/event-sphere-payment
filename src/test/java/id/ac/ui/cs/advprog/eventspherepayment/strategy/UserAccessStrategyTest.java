@@ -75,12 +75,6 @@ class UserAccessStrategyTest {
 
 
     @Test
-    void viewAllTransactions_throwsUnsupported() {
-        assertThrows(UnsupportedOperationException.class,
-                () -> strategy.viewAllTransactions());
-    }
-
-    @Test
     void viewUserTransactions_delegatesToRepositoryWithCurrentUser() {
         List<Transaction> txList = Collections.singletonList(mock(Transaction.class));
         when(repository.findByFilters(currentUserIdStr, null, null, null, null, null))
