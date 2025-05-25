@@ -30,18 +30,23 @@ repositories {
 }
 
 dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-security")
-    implementation("io.jsonwebtoken:jjwt-api:0.11.5")
-    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.11.5")
-    runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.11.5")
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("io.micrometer:micrometer-registry-prometheus-simpleclient")
     // Dependensi JPA
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     // Dotenv
     implementation("io.github.cdimascio:dotenv-java:3.0.0")
-
+    implementation ("org.springframework.boot:spring-boot-starter-security")
+    implementation ("io.jsonwebtoken:jjwt-api:0.11.5")
+    // Spring Boot OAuth2 Resource Server (untuk parsing & validasi JWT)
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+    // Untuk parsing JOSE/JWK (needed oleh resource-server)
+    implementation("org.springframework.security:spring-security-oauth2-jose")
+    runtimeOnly ("io.jsonwebtoken:jjwt-impl:0.11.5")
+    runtimeOnly ("io.jsonwebtoken:jjwt-jackson:0.11.5")
     compileOnly("org.projectlombok:lombok")
 
     developmentOnly("org.springframework.boot:spring-boot-devtools")
