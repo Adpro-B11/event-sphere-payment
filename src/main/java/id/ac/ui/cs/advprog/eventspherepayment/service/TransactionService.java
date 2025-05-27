@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.eventspherepayment.service;
 
+import id.ac.ui.cs.advprog.eventspherepayment.dto.TransactionResponse;
 import id.ac.ui.cs.advprog.eventspherepayment.model.Transaction;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,13 +26,12 @@ public interface TransactionService {
             Map<String, String> ticketData
     );
 
-    CompletableFuture<Optional<Transaction>> getTransactionById(
+    CompletableFuture<Optional<TransactionResponse>> getTransactionById(
             String transactionId
     );
 
-    CompletableFuture<List<Transaction>> filterTransactions(
+    CompletableFuture<List<TransactionResponse>> filterTransactions(
             String currentUserId,
-            boolean isAdmin,
             String status,
             String type,
             String method,
