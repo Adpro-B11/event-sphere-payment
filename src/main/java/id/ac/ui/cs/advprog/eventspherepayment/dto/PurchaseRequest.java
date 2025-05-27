@@ -15,4 +15,7 @@ public class PurchaseRequest {
     private double amount;
     private String eventId;
     private Map<String, String> ticketData;
+
+    public PurchaseRequest(String userId, String eventId, double v, int quantity, String ticketId) {
+    }
 }
