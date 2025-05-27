@@ -175,4 +175,5 @@ class TransactionControllerTest {
 
         verify(service).deleteTransaction(txId);
     }
+}
 
