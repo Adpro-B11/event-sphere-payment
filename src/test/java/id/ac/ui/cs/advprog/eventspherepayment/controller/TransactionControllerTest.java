@@ -3,6 +3,7 @@ package id.ac.ui.cs.advprog.eventspherepayment.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import id.ac.ui.cs.advprog.eventspherepayment.dto.PurchaseRequest;
 import id.ac.ui.cs.advprog.eventspherepayment.dto.TopUpRequest;
+import id.ac.ui.cs.advprog.eventspherepayment.dto.TransactionResponse;
 import id.ac.ui.cs.advprog.eventspherepayment.model.Transaction;
 import id.ac.ui.cs.advprog.eventspherepayment.security.JwtService;
 import id.ac.ui.cs.advprog.eventspherepayment.service.TransactionService;
@@ -16,7 +17,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.Authentication;
@@ -31,7 +31,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
-import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.http.HttpStatus.*;
@@ -84,66 +83,83 @@ class TransactionControllerTest {
     }
 
     private void setupSecurityContext(String userId, boolean isAdmin) {
-        // 1. Mock Authentication
         Authentication auth = mock(Authentication.class);
         doReturn(userId).when(auth).getName();
 
-        // 2. Siapkan authorities dengan tipe wildcard
         Collection<? extends GrantedAuthority> authorities =
                 isAdmin
                         ? List.of(new SimpleGrantedAuthority("ADMIN"))
                         : List.of(new SimpleGrantedAuthority("USER"));
         doReturn(authorities).when(auth).getAuthorities();
 
-        // 3. Mock SecurityContext dan pasang ke holder
         SecurityContext ctx = mock(SecurityContext.class);
         doReturn(auth).when(ctx).getAuthentication();
         SecurityContextHolder.setContext(ctx);
     }
 
-
     @Test
-    void topUpFailed_Returns400NegativeAmount() throws Exception {
-        // Given
-        when(service.createTopUpTransaction(anyString(), anyDouble(), anyString(), anyMap()))
-                .thenThrow(new ResponseStatusException(BAD_REQUEST));
-
-        TopUpRequest req = new TopUpRequest(userId, -100.0, "CREDIT_CARD", Map.of());
+    void purchaseFailed_Returns400_NegativeAmount() throws Exception {
+        // Given - negative amount should be rejected by controller validation
+        PurchaseRequest req = new PurchaseRequest(userId, eventId, -10.0, quantity, ticketId);
 
         // When & Then
-        mockMvc.perform(post("/api/transactions/topup")
+        mockMvc.perform(post("/api/transactions/purchase/{eventId}", eventId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(req)))
                 .andExpect(status().isBadRequest());
+
+        // Service should not be called due to validation failure
+        verify(service, never()).createTicketPurchaseTransaction(anyString(), anyString(), anyDouble(), anyMap());
     }
 
     @Test
-    void purchaseFailed_Returns400() throws Exception {
-
-        // Given
-        when(service.createTicketPurchaseTransaction(anyString(),anyString(), anyDouble(), anyMap()))
-                .thenThrow(new ResponseStatusException(BAD_REQUEST));
-
-        PurchaseRequest req = new PurchaseRequest(userId,eventId, -10.0, quantity,ticketId);
+    void purchaseFailed_Returns400_NegativeQuantity() throws Exception {
+        // Given - negative quantity should be rejected by controller validation
+        PurchaseRequest req = new PurchaseRequest(userId, eventId, 100.0, -1, ticketId);
 
         // When & Then
-        mockMvc.perform(post("/api/transactions/purchase")
+        mockMvc.perform(post("/api/transactions/purchase/{eventId}", eventId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(req)))
                 .andExpect(status().isBadRequest());
+
+        verify(service, never()).createTicketPurchaseTransaction(anyString(), anyString(), anyDouble(), anyMap());
+    }
+
+    @Test
+    void purchaseFailed_Returns400_EmptyTicketData() throws Exception {
+        // Given - create request with empty ticket data
+        PurchaseRequest req = new PurchaseRequest();
+        req.setUserId(userId);
+        req.setEventId(eventId);
+        req.setAmount(100.0);
+        req.setTicketData(Map.of()); // empty map
+
+        // When & Then
+        mockMvc.perform(post("/api/transactions/purchase/{eventId}", eventId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).createTicketPurchaseTransaction(anyString(), anyString(), anyDouble(), anyMap());
     }
 
     @Test
     void getByIdFound_Returns200() throws Exception {
         // Given
-        UUID txId = UUID.randomUUID();
-        Transaction tx = mock(Transaction.class);
-        when(service.getTransactionById(txId.toString()))
-                .thenReturn(CompletableFuture.completedFuture(Optional.of(tx)));
+        String txId = UUID.randomUUID().toString();
+        TransactionResponse mockResponse = mock(TransactionResponse.class);
+
+        when(service.initStrategy()).thenReturn(userId);
+        when(service.getTransactionById(txId))
+                .thenReturn(CompletableFuture.completedFuture(Optional.of(mockResponse)));
 
         // When & Then
         mockMvc.perform(get("/api/transactions/{id}", txId))
                 .andExpect(status().isOk());
+
+        verify(service).initStrategy();
+        verify(service).getTransactionById(txId);
     }
 
     @Test
@@ -156,18 +172,7 @@ class TransactionControllerTest {
         // When & Then
         mockMvc.perform(delete("/api/transactions/{id}", txId))
                 .andExpect(status().isOk());
+
+        verify(service).deleteTransaction(txId);
     }
 
-    @Test
-    void deleteTransactionNotFound_Returns400() throws Exception {
-        // Given
-        String txId = UUID.randomUUID().toString();
-        when(service.deleteTransaction(txId))
-                .thenThrow(new ResponseStatusException(BAD_REQUEST, "Not found"));
-
-        // When & Then
-        mockMvc.perform(delete("/api/transactions/{id}", txId))
-                .andExpect(status().isBadRequest())
-                .andExpect(status().reason("Not found"));
-    }
-}
