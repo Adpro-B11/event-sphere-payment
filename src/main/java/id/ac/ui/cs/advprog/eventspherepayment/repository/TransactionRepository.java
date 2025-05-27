@@ -9,15 +9,12 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
-
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Slf4j
 @Repository
 public class TransactionRepository {
 
@@ -39,9 +36,6 @@ public class TransactionRepository {
             eventUuid = UUID.fromString(eventId);
         }
 
-        log.debug("Creating transaction: type={}, txId={}, userId={}, eventId={}, amount={}, method={}, data={}",
-                type, txUuid, userUuid, eventUuid, amount, method, data);
-
         Transaction tx = TransactionFactoryProducer
                 .getFactory(type, txUuid, userUuid, eventUuid, amount, method, data)
                 .createTransaction();
@@ -51,8 +45,6 @@ public class TransactionRepository {
 
     public Transaction save(Transaction tx) {
         Objects.requireNonNull(tx, "Transaction must not be null");
-        log.debug("Persisting transaction: txId={}, userId={}, type={}, amount={}",
-                tx.getTransactionId(), tx.getUserId(), tx.getType(), tx.getAmount());
         entityManager.persist(tx);
         entityManager.flush();
         return tx;
@@ -60,7 +52,6 @@ public class TransactionRepository {
 
     public Transaction update(Transaction tx) {
         Objects.requireNonNull(tx, "Transaction must not be null");
-        log.debug("Updating transaction: txId={}, userId={}", tx.getTransactionId(), tx.getUserId());
         Transaction managed = entityManager.merge(tx);
         entityManager.flush();
         return managed;
@@ -69,10 +60,8 @@ public class TransactionRepository {
     public Optional<Transaction> findById(String id) {
         try {
             UUID uuid = UUID.fromString(id);
-            log.debug("Finding transaction by id: {}", id);
             return Optional.ofNullable(entityManager.find(Transaction.class, uuid));
         } catch (IllegalArgumentException ex) {
-            log.error("Invalid UUID format for transaction id: {}", id, ex);
             return Optional.empty();
         }
     }
@@ -85,9 +74,6 @@ public class TransactionRepository {
             LocalDateTime createdAfter,
             LocalDateTime createdBefore) {
 
-        log.debug("Finding transactions with filters: userId={}, status={}, type={}, method={}, createdAfter={}, createdBefore={}",
-                userId, status, type, method, createdAfter, createdBefore);
-
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<Transaction> cq = cb.createQuery(Transaction.class);
         Root<Transaction> root = cq.from(Transaction.class);
@@ -98,7 +84,6 @@ public class TransactionRepository {
             try {
                 predicates.add(cb.equal(root.get("userId"), UUID.fromString(userId)));
             } catch (IllegalArgumentException ex) {
-                log.error("Invalid UUID for userId: {}", userId, ex);
                 return Collections.emptyList();
             }
         }
@@ -116,8 +101,6 @@ public class TransactionRepository {
 
         List<Transaction> result = entityManager.createQuery(cq).getResultList();
 
-        log.debug("Query result count before method filter: {}", result.size());
-
         if (method != null) {
             result = result.stream().filter(tx -> {
                 if (tx instanceof TopUpTransaction tut)
@@ -126,19 +109,14 @@ public class TransactionRepository {
                     return method.equalsIgnoreCase(tpt.getMethod());
                 return false;
             }).collect(Collectors.toList());
-            log.debug("Result count after method filter: {}", result.size());
         }
-
-        log.debug("Returning {} transaction(s) after filtering", result.size());
         return result;
     }
 
     public void deleteById(String id) {
-        log.debug("Deleting transaction by id: {}", id);
         findById(id).ifPresent(tx -> {
             entityManager.remove(tx);
             entityManager.flush();
-            log.info("Transaction deleted: txId={}", tx.getTransactionId());
         });
     }
 }
