@@ -2,6 +2,7 @@ package id.ac.ui.cs.advprog.eventspherepayment.security;
 
 import java.security.Key;
 import java.util.Date;
+import java.util.function.Function;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -11,6 +12,7 @@ import io.jsonwebtoken.security.SignatureException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import io.jsonwebtoken.io.Decoders;
@@ -28,13 +30,24 @@ public class JwtService {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String getUserIdFromJWT(String token) {
-        Claims claims = Jwts.parser()
+    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+        final Claims claims = extractAllClaims(token);
+        return claimsResolver.apply(claims);
+    }
+
+    protected Claims extractAllClaims(String token) {
+        return Jwts
+                .parserBuilder()
                 .setSigningKey(getSigningKey())
+                .build()
                 .parseClaimsJws(token)
                 .getBody();
-        return claims.getSubject();
     }
+
+    public String extractUserId(String token) {
+        return extractClaim(token, claims -> claims.get("userId", String.class));
+    }
+
 
     public String getRoleFromJWT(String token) {
         Claims claims = Jwts.parser()

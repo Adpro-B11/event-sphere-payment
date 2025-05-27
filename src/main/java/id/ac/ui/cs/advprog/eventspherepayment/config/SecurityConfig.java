@@ -32,15 +32,17 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.GET, "/api/transactions/**").hasAnyRole("ATTENDEE", "ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/transactions/**").hasAnyRole("ATTENDEE", "ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/transactions/**").hasAnyRole("ATTENDEE", "ADMIN")
-                        .anyRequest().authenticated()
+                        .requestMatchers( "/api/transactions/**","/api/transactions", "/h2-console/**")
+                        .permitAll().anyRequest().authenticated()
+
                 )
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                );
-        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 

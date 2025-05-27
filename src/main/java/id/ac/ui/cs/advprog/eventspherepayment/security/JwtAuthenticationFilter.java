@@ -44,7 +44,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 if (jwtService.validateToken(token)) {
                     logger.debug("JWT validation successful.");
-                    String userId = jwtService.getUserIdFromJWT(token);
+                    String userId = jwtService.extractUserId(token);
                     String role = jwtService.getRoleFromJWT(token);
                     logger.debug("User ID from JWT: {}, Role from JWT: {}", userId, role);
 
