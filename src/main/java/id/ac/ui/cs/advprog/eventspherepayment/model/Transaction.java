@@ -19,10 +19,10 @@ import java.util.UUID;
 public abstract class Transaction {
 
     @Id
-    @Column(name = "transaction_id", columnDefinition = "BINARY(16)")
+    @Column(name = "transaction_id", columnDefinition = "UUID")
     private UUID transactionId;
 
-    @Column(name = "user_id", nullable = false, columnDefinition = "BINARY(16)")
+    @Column(name = "user_id", nullable = false, columnDefinition = "UUID")
     private UUID userId;
 
     @Column(name = "type", nullable = false)
@@ -72,4 +72,8 @@ public abstract class Transaction {
     public abstract Map<String, String> getData();
 
     public abstract void validateTransaction(String method, Map<String, String> paymentData);
+
+    public UUID getId() {
+        return this.transactionId;
+    }
 }

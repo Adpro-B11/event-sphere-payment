@@ -18,7 +18,7 @@ import java.util.UUID;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class TicketPurchaseTransaction extends Transaction {
 
-    @Column(name = "event_id", columnDefinition = "BINARY(16)")
+    @Column(name = "event_id", columnDefinition = "UUID")
     private UUID eventId;
 
     @Column(name = "payment_method")
