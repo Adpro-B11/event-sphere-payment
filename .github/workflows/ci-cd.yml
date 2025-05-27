@@ -9,57 +9,68 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      DB_URL: ${{ secrets.DB_URL }}
+      DB_USERNAME: ${{ secrets.DB_USERNAME }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+      AUTH_SERVICE_BASE_URL: ${{ secrets.AUTH_SERVICE_BASE_URL }}
+      EVENT_SERVICE_BASE_URL: ${{ secrets.EVENT_SERVICE_BASE_URL }}
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Set up JDK
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'adopt'
-        java-version: '21'
+      - name: Set up JDK
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt'
+          java-version: '21'
 
-    - name: Build with Maven
-      run: mvn clean package
+      - name: Build with Maven
+        run: mvn clean package
 
-    - name: Archive production artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: packaged-application
-        path: target/*.jar
+      - name: Archive production artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: packaged-application
+          path: target/*.jar
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
 
     steps:
-    - name: Download artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: packaged-application
-        path: target/
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: packaged-application
+          path: target/
 
-    - name: Setup key
-      id: setup-key
-      env:
-        DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
-      run: |
-        echo "$DEPLOY_KEY" >> $HOME/key.pem
-        chmod 400 $HOME/key.pem
+      - name: Setup key
+        id: setup-key
+        env:
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+        run: |
+          echo "$DEPLOY_KEY" >> $HOME/key.pem
+          chmod 400 $HOME/key.pem
 
-    - name: Copy JAR to EC2
-      uses: appleboy/scp-action@master
-      with:
-        host: ${{ secrets.DEPLOY_HOST }}
-        username: ubuntu
-        key: ${{ secrets.DEPLOY_KEY }}
-        source: "target/*.jar"
-        target: "/home/ubuntu/deployment/"
+      - name: Test Secrets
+        run: echo "DEPLOY_HOST is ${{ secrets.DEPLOY_HOST }}"
 
-    - name: Connect SSH and Restart Services
-      run: |
-        ssh -o StrictHostKeyChecking=no -i $HOME/key.pem ubuntu@ec2-3-219-44-29.compute-1.amazonaws.com '
-          sudo systemctl restart event-sphere-payment &&
-          sudo systemctl restart nginx
-        '
+
+      - name: Copy JAR to EC2
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ubuntu
+          key: ${{ secrets.DEPLOY_KEY }}
+          source: "target/*.jar"
+          target: "/home/ubuntu/deployment/"
+
+      - name: Connect SSH and Restart Services
+        run: |
+          ssh -o StrictHostKeyChecking=no -i $HOME/key.pem  ubuntu@ec2-35-174-243-167.compute-1.amazonaws.com '
+            sudo systemctl restart eventsphere &&
+            sudo systemctl restart nginx
+          '
