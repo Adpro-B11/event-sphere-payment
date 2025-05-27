@@ -32,7 +32,6 @@ public class AdminAccessStrategy implements AccessStrategy {
     }
 
     @Override
-    public void deleteTransaction(String transactionId) {
-        repository.deleteById(transactionId);
+    public void deleteTransaction(String transactionId) {repository.deleteById(transactionId);
     }
 }
