@@ -1,8 +1,10 @@
 package id.ac.ui.cs.advprog.eventspherepayment.service;
 
 import id.ac.ui.cs.advprog.eventspherepayment.client.AuthServiceClient;
+import id.ac.ui.cs.advprog.eventspherepayment.client.TicketServiceClient;
 import id.ac.ui.cs.advprog.eventspherepayment.enums.TransactionStatus;
 import id.ac.ui.cs.advprog.eventspherepayment.enums.TransactionType;
+import id.ac.ui.cs.advprog.eventspherepayment.model.TicketPurchaseTransaction;
 import id.ac.ui.cs.advprog.eventspherepayment.model.Transaction;
 import id.ac.ui.cs.advprog.eventspherepayment.repository.TransactionRepository;
 import id.ac.ui.cs.advprog.eventspherepayment.strategy.AccessStrategy;
@@ -30,7 +32,7 @@ class TransactionServiceImplTest {
 
     @Mock private TransactionRepository repository;
     @Mock private AuthServiceClient authClient;
-    @Mock private RestTemplate restTemplate;
+    @Mock private TicketServiceClient ticketClient;
     private TransactionServiceImpl service;
 
     private String userId;
@@ -47,7 +49,7 @@ class TransactionServiceImplTest {
         SecurityContextHolder.clearContext();
 
         String dummy = "http://localhost:8080/";
-        service = new TransactionServiceImpl(repository, authClient, restTemplate, dummy);
+        service = new TransactionServiceImpl(repository, authClient,ticketClient, dummy);
 
         userId  = UUID.randomUUID().toString();
         eventId  = UUID.randomUUID().toString();
@@ -113,7 +115,7 @@ class TransactionServiceImplTest {
 
         service.processTopUpAsync(tx).get();
 
-        InOrder inOrder = inOrder(tx, repository, restTemplate);
+        InOrder inOrder = inOrder(tx, repository);
         inOrder.verify(tx).setStatus(TransactionStatus.SUCCESS.getValue());
         inOrder.verify(repository).update(tx);
 
@@ -128,12 +130,18 @@ class TransactionServiceImplTest {
         when(authClient.deductBalance(userId, amount)).thenReturn(false);
         when(repository.update(tx)).thenReturn(tx);
 
-        service.processPurchaseAsync(tx).get();
+        service.processPurchaseAsync(tx,getEventIdFromTransaction(tx)).get();
 
         InOrder inOrder = inOrder(tx, repository);
         inOrder.verify(tx).setStatus(TransactionStatus.FAILED.getValue());
         inOrder.verify(repository).update(tx);
-        verifyNoInteractions(restTemplate);
+    }
+
+    private String getEventIdFromTransaction(Transaction tx) {
+        if (tx instanceof TicketPurchaseTransaction ticketPurchaseTx) {
+            return String.valueOf(ticketPurchaseTx.getEventId());
+        }
+        return null;
     }
 
     @Test
