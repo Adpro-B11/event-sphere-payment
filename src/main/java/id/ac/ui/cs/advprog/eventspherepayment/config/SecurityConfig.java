@@ -32,9 +32,9 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers( "/api/transactions/**","/api/transactions", "/h2-console/**")
-                        .permitAll().anyRequest().authenticated()
-
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/api/transactions/**", "/api/transactions", "/h2-console/**").permitAll()
+                        .anyRequest().authenticated()
                 )
 
                 .sessionManagement(session ->
