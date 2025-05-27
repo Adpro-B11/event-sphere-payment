@@ -1,11 +1,9 @@
 package id.ac.ui.cs.advprog.eventspherepayment.controller;
 
-import id.ac.ui.cs.advprog.eventspherepayment.dto.FilterTransactionsResponse;
-import id.ac.ui.cs.advprog.eventspherepayment.dto.GetByIdResponse;
-import id.ac.ui.cs.advprog.eventspherepayment.dto.PurchaseRequest;
-import id.ac.ui.cs.advprog.eventspherepayment.dto.TopUpRequest;
+import id.ac.ui.cs.advprog.eventspherepayment.dto.*;
 import id.ac.ui.cs.advprog.eventspherepayment.model.Transaction;
 import id.ac.ui.cs.advprog.eventspherepayment.service.TransactionService;
+import lombok.extern.slf4j.Slf4j;                     // 👈 ➊
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+@Slf4j                                               // 👈 ➋
 @RestController
 @RequestMapping("/api/transactions")
 public class TransactionController {
@@ -25,10 +24,17 @@ public class TransactionController {
         this.service = service;
     }
 
-    @PostMapping(value = "/topup",
+    /* ─────────────────────────── TOP-UP ─────────────────────────── */
+
+    @PostMapping(
+            value = "/topup",
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Transaction> topUpBalance(@RequestBody TopUpRequest request) {
+
+        log.info("⏩  Top-Up request  userId={} amount={} method={}",
+                request.getUserId(), request.getAmount(), request.getMethod());
+
         service.initStrategy();
         Transaction tx = service.createTopUpTransaction(
                 request.getUserId(),
@@ -36,56 +42,82 @@ public class TransactionController {
                 request.getMethod(),
                 request.getPaymentData()
         );
+
+        log.info("✅  Top-Up created id={} status={}", tx.getId(), tx.getStatus());
         return ResponseEntity.status(HttpStatus.CREATED).body(tx);
     }
 
-    @PostMapping(
-            value = "/purchase",
-            consumes = MediaType.APPLICATION_JSON_VALUE,
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    public ResponseEntity<Transaction> purchaseTicket(@RequestBody PurchaseRequest request) {
+    /* ──────────────────────── PURCHASE TICKET ───────────────────── */
 
-        if (request.getAmount() < 0 || request.getQuantity() < 0) {
-            return ResponseEntity
-                    .badRequest()
-                    .build();
+    @PostMapping(
+            value = "/purchase/{eventId}",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Transaction> purchaseTicket(@PathVariable String eventId, @RequestBody PurchaseRequest request) {
+
+        log.info("⏩  Purchase request  eventId={} ticketData={} amount={}",
+                request.getEventId(), request.getTicketData(), request.getAmount());
+
+        // Validation: amount must be positive, and all ticket quantities must be positive integers
+        if (request.getAmount() < 0) {
+            log.warn("⛔  Reject purchase: negative amount");
+            return ResponseEntity.badRequest().build();
+        }
+        if (request.getTicketData() == null || request.getTicketData().isEmpty()) {
+            log.warn("⛔  Reject purchase: no ticket data provided");
+            return ResponseEntity.badRequest().build();
+        }
+        for (Map.Entry<String, String> entry : request.getTicketData().entrySet()) {
+            try {
+                int qty = Integer.parseInt(entry.getValue());
+                if (qty < 0) {
+                    log.warn("⛔  Reject purchase: ticket {} has negative quantity ({})", entry.getKey(), qty);
+                    return ResponseEntity.badRequest().build();
+                }
+            } catch (NumberFormatException e) {
+                log.warn("⛔  Reject purchase: ticket {} has invalid quantity '{}'", entry.getKey(), entry.getValue());
+                return ResponseEntity.badRequest().build();
+            }
         }
 
-        String currentUserId = service.initStrategy();
-        Map<String, String> ticketData = new HashMap<>();
-        ticketData.put(
-                request.getTicketId(),
-                String.valueOf(request.getQuantity())
-        );
+        String currentUserId = request.getUserId();
 
         Transaction tx = service.createTicketPurchaseTransaction(
                 currentUserId,
                 request.getEventId(),
                 request.getAmount(),
-                ticketData
+                request.getTicketData()
         );
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(tx);
+
+        log.info("✅  Purchase created id={} status={}", tx.getId(), tx.getStatus());
+        return ResponseEntity.status(HttpStatus.CREATED).body(tx);
     }
 
+    /* ───────────────────────────── GET BY ID ────────────────────── */
+
     @GetMapping("/{id}")
-    public CompletableFuture<ResponseEntity<GetByIdResponse>> getById(
-            @PathVariable String id) {
+    public CompletableFuture<ResponseEntity<GetByIdResponse>> getById(@PathVariable String id) {
+
+        log.debug("➡  Get transaction by id={}", id);
         service.initStrategy();
 
         return service.getTransactionById(id)
                 .thenApply(opt -> opt
-                        .map(tx -> ResponseEntity.ok(new GetByIdResponse(tx)))
-                        .orElseGet(() -> ResponseEntity.notFound().build())
+                        .map(tx -> {
+                            log.debug("✅  Found transaction id={}", id);
+                            return ResponseEntity.ok(new GetByIdResponse(tx));
+                        })
+                        .orElseGet(() -> {
+                            log.warn("❓  Transaction id={} not found", id);
+                            return ResponseEntity.notFound().build();
+                        })
                 );
     }
 
+    /* ─────────────────── FILTERING / SEARCH LIST ────────────────── */
+
     @GetMapping
     public CompletableFuture<ResponseEntity<FilterTransactionsResponse>> filteringTransaction(
-            @RequestParam String currentUserId,
-            @RequestParam(defaultValue = "false") boolean isAdmin,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String method,
@@ -94,16 +126,32 @@ public class TransactionController {
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdBefore) {
 
+        // Selalu reset strategy berdasarkan user yang lagi login
+        String currentUserId = service.initStrategy();
+
+        log.debug("➡  Filter tx  userId={}  status={} type={} method={} after={} before={}",
+                currentUserId, status, type, method, createdAfter, createdBefore);
+
         return service.filterTransactions(
-                        currentUserId, isAdmin, status, type, method,
+                        currentUserId,  status, type, method,
                         createdAfter, createdBefore)
-                .thenApply(list -> ResponseEntity.ok(new FilterTransactionsResponse(list)));
+                .thenApply(dtoList -> {
+                    log.debug("✅  Filter result: {} records", dtoList.size());
+                    return ResponseEntity.ok(new FilterTransactionsResponse(dtoList));
+                });
     }
+
+
+    /* ───────────────────────────── DELETE ───────────────────────── */
 
     @DeleteMapping("/{id}")
-    public CompletableFuture<ResponseEntity<Void>> delete(
-            @PathVariable String id){
-        return service.deleteTransaction(id).thenApply(v -> ResponseEntity.ok().build());
-    }
+    public CompletableFuture<ResponseEntity<Void>> delete(@PathVariable String id) {
 
+        log.info("🗑  Delete transaction id={}", id);
+        return service.deleteTransaction(id)
+                .thenApply(v -> {
+                    log.info("✅  Deleted transaction id={}", id);
+                    return ResponseEntity.ok().build();
+                });
+    }
 }
